@@ -1,0 +1,14 @@
+pennylane
+flask
+flask-cors
+pandas
+numpy
+plotly
+folium
+geopy
+requests
+scikit-learn
+networkx
+matplotlib
+seaborn
+scipy
