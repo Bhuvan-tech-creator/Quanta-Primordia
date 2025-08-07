@@ -6,7 +6,7 @@ This project explores the use of quantum computing to optimize traffic routes in
 
 -   **Interactive Map:** Visualizes traffic patterns and optimized routes on an interactive map of NYC.
 -   **Quantum-Enhanced Route Optimization:** Utilizes quantum computing principles to find the most efficient routes, considering both time and distance.
--   **Real-Time Data Integration:** Incorporates real-time traffic data to provide accurate and up-to-date route analysis.
+-   **Data Integration:** Incorporates real-time traffic data to provide accurate and up-to-date route analysis.
 -   **User-Friendly Interface:** Allows users to select start and end zones and view detailed route comparisons.
 -   **Detailed Route Analysis:** Provides comprehensive information on distance, time, and CO2 emissions for classical and quantum-optimized routes.
 -   **Performance Improvements:** Includes optimized code for faster route calculation and analysis.
