@@ -16,18 +16,18 @@ from route_service import get_route_service
 app = Flask(__name__)
 CORS(app)
 
-# Initialize the quantum traffic optimizer
+
 optimizer = None
 zone_data = None
 
 def load_zone_data():
-    """Load zone data from CSV"""
+    
     global zone_data
     if zone_data is None:
         zone_data = pd.read_csv('taxi_zone_lookup.csv')
 
 def initialize_optimizer():
-    """Initialize the quantum traffic optimizer with advanced algorithms - OPTIMIZED VERSION"""
+    
     global optimizer
     if optimizer is None:
         print("Initializing advanced quantum traffic optimizer (OPTIMIZED VERSION)...")
@@ -35,11 +35,11 @@ def initialize_optimizer():
             optimizer = QuantumTrafficOptimizer(
                 trip_data_path='yellow_tripdata_2025-06.parquet',
                 zone_data_path='taxi_zone_lookup.csv',
-                num_qubits=12  # Reduced for speed
+                num_qubits=12  
             )
-            # Run advanced quantum optimization with time limit
+            
             print("Running quantum optimization (FAST MODE)...")
-            optimizer.optimize_traffic_routes(num_iterations=75)  # Reduced iterations for speed
+            optimizer.optimize_traffic_routes(num_iterations=75)  
             print("Quantum optimization completed!")
         except Exception as e:
             print(f"Error initializing quantum optimizer: {e}")
@@ -47,24 +47,24 @@ def initialize_optimizer():
 
 @app.route('/')
 def index():
-    """Main page with interactive map and controls"""
+    
     return render_template('index.html')
 
 @app.route('/test')
 def test():
-    """Test page for dropdown functionality"""
+    
     return render_template('test_dropdown.html')
 
 @app.route('/api/zones', methods=['GET'])
 def get_zones():
-    """Get all available zones for dropdown selection"""
+    
     try:
         if zone_data is None:
             load_zone_data()
         
         zones = []
         for _, zone in zone_data.iterrows():
-            # Handle NaN values
+            
             borough = zone['Borough'] if pd.notna(zone['Borough']) else 'Unknown'
             zone_name = zone['Zone'] if pd.notna(zone['Zone']) else 'Unknown Zone'
             
@@ -80,11 +80,11 @@ def get_zones():
 
 @app.route('/api/optimize_route', methods=['POST'])
 def optimize_route():
-    """Optimize route between two zones using real road routing and quantum optimization - OPTIMIZED VERSION"""
+    
     try:
         print("=== Route optimization request received (OPTIMIZED VERSION) ===")
         start_time = time.time()
-        max_total_time = 90  # 90 seconds max (reduced from 120)
+        max_total_time = 90  
         
         data = request.get_json()
         start_zone = int(data['start_zone'])
@@ -92,7 +92,7 @@ def optimize_route():
         
         print(f"Optimizing route from zone {start_zone} to zone {end_zone}")
         
-        # Get zone information
+        
         if zone_data is None:
             load_zone_data()
         
@@ -102,12 +102,12 @@ def optimize_route():
         print(f"Start zone: {start_zone_info['Zone']} ({start_zone_info['Borough']})")
         print(f"End zone: {end_zone_info['Zone']} ({end_zone_info['Borough']})")
         
-        # Initialize quantum optimizer if not already done (lazy initialization)
+        
         if optimizer is None:
             print("Initializing quantum optimizer on-demand...")
             initialize_optimizer()
         
-        # Get route analysis using real road routing and quantum optimization
+        
         print("Getting route service...")
         route_service = get_route_service()
         print("Starting route analysis...")
@@ -131,7 +131,7 @@ def optimize_route():
         total_time = time.time() - start_time
         print(f"=== Route optimization completed in {total_time:.2f} seconds ===")
         
-        # Check if we exceeded time limit
+        
         if total_time > max_total_time:
             print(f"WARNING: Route optimization took {total_time:.2f} seconds (exceeded {max_total_time}s limit)")
         
@@ -148,7 +148,7 @@ def optimize_route():
         return jsonify({'status': 'error', 'message': str(e)})
 
 if __name__ == '__main__':
-    # Create templates directory if it doesn't exist
+    
     os.makedirs('templates', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     os.makedirs('static/css', exist_ok=True)

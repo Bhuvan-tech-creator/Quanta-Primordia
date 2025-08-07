@@ -10,13 +10,7 @@ warnings.filterwarnings('ignore')
 
 class NYCDataProcessor:
     def __init__(self, trip_data_path, zone_data_path):
-        """
-        Initialize the NYC data processor
         
-        Args:
-            trip_data_path: Path to the parquet file with trip data
-            zone_data_path: Path to the CSV file with zone data
-        """
         self.trip_data_path = trip_data_path
         self.zone_data_path = zone_data_path
         self.trip_data = None
@@ -25,71 +19,71 @@ class NYCDataProcessor:
         self.traffic_patterns = None
         
     def load_and_preprocess(self):
-        """Load and preprocess the NYC taxi data"""
+        
         print("Loading NYC taxi data...")
         
-        # Load trip data
+        
         self.trip_data = pd.read_parquet(self.trip_data_path)
         print(f"Loaded {len(self.trip_data)} trips")
         
-        # Load zone data
+        
         self.zone_data = pd.read_csv(self.zone_data_path)
         print(f"Loaded {len(self.zone_data)} zones")
         
-        # Preprocess trip data
+        
         self._preprocess_trip_data()
         
-        # Create traffic patterns
+        
         self._create_traffic_patterns()
         
-        # Save processed data
+        
         self._save_processed_data()
         
         return self.processed_data
     
     def _preprocess_trip_data(self):
-        """Preprocess the trip data for analysis"""
+        
         print("Preprocessing trip data...")
         
-        # Convert datetime columns
+        
         self.trip_data['tpep_pickup_datetime'] = pd.to_datetime(self.trip_data['tpep_pickup_datetime'])
         self.trip_data['tpep_dropoff_datetime'] = pd.to_datetime(self.trip_data['tpep_dropoff_datetime'])
         
-        # Add time-based features
+        
         self.trip_data['pickup_hour'] = self.trip_data['tpep_pickup_datetime'].dt.hour
         self.trip_data['pickup_day'] = self.trip_data['tpep_pickup_datetime'].dt.dayofweek
         self.trip_data['pickup_month'] = self.trip_data['tpep_pickup_datetime'].dt.month
         self.trip_data['trip_duration'] = (
             self.trip_data['tpep_dropoff_datetime'] - self.trip_data['tpep_pickup_datetime']
-        ).dt.total_seconds() / 60  # minutes
+        ).dt.total_seconds() / 60  
         
-        # Add derived features
+        
         self.trip_data['speed_mph'] = self.trip_data['trip_distance'] / (self.trip_data['trip_duration'] / 60)
         self.trip_data['fare_per_mile'] = self.trip_data['total_amount'] / self.trip_data['trip_distance']
         
-        # Filter out invalid trips
+        
         self.trip_data = self.trip_data[
             (self.trip_data['trip_distance'] > 0) &
             (self.trip_data['trip_duration'] > 0) &
-            (self.trip_data['trip_duration'] < 180) &  # Less than 3 hours
+            (self.trip_data['trip_duration'] < 180) &  
             (self.trip_data['speed_mph'] > 0) &
-            (self.trip_data['speed_mph'] < 60)  # Reasonable speed
+            (self.trip_data['speed_mph'] < 60)  
         ]
         
         print(f"After preprocessing: {len(self.trip_data)} valid trips")
         
     def _create_traffic_patterns(self):
-        """Create traffic patterns and congestion analysis"""
+        
         print("Creating traffic patterns...")
         
-        # Create zone mapping
+        
         zones = sorted(self.zone_data['LocationID'].unique())
         zone_to_idx = {zone: idx for idx, zone in enumerate(zones)}
         
-        # Initialize traffic matrix
+        
         traffic_matrix = np.zeros((len(zones), len(zones)))
         
-        # Calculate traffic between zones
+        
         for _, trip in self.trip_data.iterrows():
             pickup_zone = trip['PULocationID']
             dropoff_zone = trip['DOLocationID']
@@ -98,16 +92,16 @@ class NYCDataProcessor:
                 pickup_idx = zone_to_idx[pickup_zone]
                 dropoff_idx = zone_to_idx[dropoff_zone]
                 
-                # Weight by trip distance, duration, and fare
+                
                 weight = trip['trip_distance'] * (trip['trip_duration'] / 60) * (trip['total_amount'] / 10)
                 traffic_matrix[pickup_idx][dropoff_idx] += weight
         
-        # Normalize the traffic matrix
+        
         max_traffic = np.max(traffic_matrix)
         if max_traffic > 0:
             traffic_matrix = traffic_matrix / max_traffic
         
-        # Create hourly traffic patterns
+        
         hourly_traffic = self.trip_data.groupby('pickup_hour').agg({
             'trip_distance': 'mean',
             'trip_duration': 'mean',
@@ -115,7 +109,7 @@ class NYCDataProcessor:
             'speed_mph': 'mean'
         }).reset_index()
         
-        # Create borough-wise traffic patterns
+        
         zone_traffic_df = pd.DataFrame({
             'LocationID': list(zone_to_idx.keys()),
             'TrafficVolume': np.sum(traffic_matrix, axis=1)
@@ -126,9 +120,9 @@ class NYCDataProcessor:
             'LocationID': 'count'
         }).rename(columns={'LocationID': 'ZoneCount'})
         
-        # Create congestion hotspots
+        
         zone_traffic = np.sum(traffic_matrix, axis=1)
-        hotspot_zones = np.argsort(zone_traffic)[-20:]  # Top 20 congested zones
+        hotspot_zones = np.argsort(zone_traffic)[-20:]  
         
         self.traffic_patterns = {
             'traffic_matrix': traffic_matrix,
@@ -142,21 +136,21 @@ class NYCDataProcessor:
         print(f"Created traffic patterns with {len(zones)} zones")
         
     def _save_processed_data(self):
-        """Save processed data for faster loading"""
+        
         self.processed_data = {
             'trip_data': self.trip_data,
             'zone_data': self.zone_data,
             'traffic_patterns': self.traffic_patterns
         }
         
-        # Save to pickle file for faster loading
+        
         with open('processed_nyc_data.pkl', 'wb') as f:
             pickle.dump(self.processed_data, f)
         
         print("Processed data saved to processed_nyc_data.pkl")
     
     def get_traffic_analysis(self):
-        """Get comprehensive traffic analysis"""
+        
         if self.traffic_patterns is None:
             self.load_and_preprocess()
         
@@ -175,7 +169,7 @@ class NYCDataProcessor:
         return analysis
     
     def get_zone_statistics(self):
-        """Get statistics for each zone"""
+        
         if self.traffic_patterns is None:
             self.load_and_preprocess()
         
@@ -204,19 +198,19 @@ class NYCDataProcessor:
         return pd.DataFrame(zone_stats)
     
     def get_optimization_scenarios(self):
-        """Generate optimization scenarios for quantum computing"""
+        
         if self.traffic_patterns is None:
             self.load_and_preprocess()
         
-        # Find high-traffic routes for optimization
+        
         traffic_matrix = self.traffic_patterns['traffic_matrix']
         zone_mapping = self.traffic_patterns['zone_mapping']
         
-        # Get top traffic routes
+        
         routes = []
         for i in range(len(traffic_matrix)):
             for j in range(len(traffic_matrix)):
-                if i != j and traffic_matrix[i][j] > 0.1:  # Significant traffic
+                if i != j and traffic_matrix[i][j] > 0.1:  
                     start_zone = list(zone_mapping.keys())[i]
                     end_zone = list(zone_mapping.keys())[j]
                     
@@ -228,24 +222,24 @@ class NYCDataProcessor:
                     }
                     routes.append(route)
         
-        # Sort by optimization priority
+        
         routes.sort(key=lambda x: x['optimization_priority'], reverse=True)
         
-        return routes[:50]  # Top 50 routes for optimization
+        return routes[:50]  
     
     def calculate_congestion_metrics(self):
-        """Calculate congestion metrics for optimization"""
+        
         if self.traffic_patterns is None:
             self.load_and_preprocess()
         
         traffic_matrix = self.traffic_patterns['traffic_matrix']
         
-        # Calculate congestion metrics
+        
         total_congestion = np.sum(traffic_matrix)
         max_congestion = np.max(traffic_matrix)
         avg_congestion = np.mean(traffic_matrix)
         
-        # Calculate congestion distribution
+        
         congestion_levels = {
             'low': np.sum(traffic_matrix < 0.1),
             'medium': np.sum((traffic_matrix >= 0.1) & (traffic_matrix < 0.5)),
@@ -260,11 +254,11 @@ class NYCDataProcessor:
         }
     
     def get_time_based_patterns(self):
-        """Get time-based traffic patterns"""
+        
         if self.traffic_patterns is None:
             self.load_and_preprocess()
         
-        # Hourly patterns
+        
         hourly_patterns = self.trip_data.groupby('pickup_hour').agg({
             'trip_distance': ['mean', 'std'],
             'trip_duration': ['mean', 'std'],
@@ -272,7 +266,7 @@ class NYCDataProcessor:
             'total_amount': ['mean', 'std']
         }).round(2)
         
-        # Daily patterns
+        
         daily_patterns = self.trip_data.groupby('pickup_day').agg({
             'trip_distance': 'mean',
             'trip_duration': 'mean',
@@ -280,7 +274,7 @@ class NYCDataProcessor:
             'total_amount': 'mean'
         }).round(2)
         
-        # Peak hours analysis
+        
         peak_hours = self.trip_data.groupby('pickup_hour').size()
         peak_hours = peak_hours.sort_values(ascending=False)
         
@@ -291,27 +285,27 @@ class NYCDataProcessor:
         }
 
 if __name__ == "__main__":
-    # Example usage
+    
     processor = NYCDataProcessor(
         trip_data_path='yellow_tripdata_2025-06.parquet',
         zone_data_path='taxi_zone_lookup.csv'
     )
     
-    # Process data
+    
     processed_data = processor.load_and_preprocess()
     
-    # Get analysis
+    
     analysis = processor.get_traffic_analysis()
     print("Traffic Analysis:", analysis)
     
-    # Get zone statistics
+    
     zone_stats = processor.get_zone_statistics()
     print(f"Zone Statistics: {len(zone_stats)} zones analyzed")
     
-    # Get optimization scenarios
+    
     scenarios = processor.get_optimization_scenarios()
     print(f"Optimization Scenarios: {len(scenarios)} routes identified")
     
-    # Get congestion metrics
+    
     congestion = processor.calculate_congestion_metrics()
     print("Congestion Metrics:", congestion) 
