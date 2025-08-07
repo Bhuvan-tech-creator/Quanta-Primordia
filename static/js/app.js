@@ -234,41 +234,45 @@ function displayRouteResults(route) {
     document.getElementById('classicalTime').textContent = route.classical.time;
     document.getElementById('classicalCO2').textContent = route.classical.co2;
     
-    // Quantum route
-    document.getElementById('quantumDistance').textContent = route.quantum.distance;
-    document.getElementById('quantumTime').textContent = route.quantum.time;
-    document.getElementById('quantumCO2').textContent = route.quantum.co2;
+    // Quantum Time route
+    document.getElementById('quantumTimeDistance').textContent = route.quantum_time.distance;
+    document.getElementById('quantumTimeTime').textContent = route.quantum_time.time;
+    document.getElementById('quantumTimeCO2').textContent = route.quantum_time.co2;
     
-    // Improvements
-    document.getElementById('distanceImprovement').textContent = route.improvements.distance_improvement;
+    // Quantum Distance route
+    document.getElementById('quantumDistanceDistance').textContent = route.quantum_distance.distance;
+    document.getElementById('quantumDistanceTime').textContent = route.quantum_distance.time;
+    document.getElementById('quantumDistanceCO2').textContent = route.quantum_distance.co2;
     
-    // Handle time improvement - if quantum route is slower, show negative improvement
-    const timeImprovement = route.improvements.time_improvement;
-    console.log('Time improvement calculation:', {
-        classicalTime: route.classical.time,
-        quantumTime: route.quantum.time,
-        timeImprovement: timeImprovement
-    });
+    // Time optimization improvements
+    document.getElementById('timeDistanceImprovement').textContent = route.improvements.time_distance_improvement;
     
-    if (timeImprovement < 0) {
-        document.getElementById('timeImprovement').textContent = Math.abs(timeImprovement) + '% time increase';
-        // Change the icon to indicate increase
-        document.getElementById('timeImprovement').innerHTML = '<i class="fas fa-arrow-down"></i> ' + Math.abs(timeImprovement) + '% time increase';
+    // Handle time improvement for time optimization
+    const timeTimeImprovement = route.improvements.time_time_improvement;
+    if (timeTimeImprovement < 0) {
+        document.getElementById('timeTimeImprovement').textContent = Math.abs(timeTimeImprovement) + '% time increase';
+        document.getElementById('timeTimeImprovement').innerHTML = '<i class="fas fa-arrow-down"></i> ' + Math.abs(timeTimeImprovement) + '% time increase';
     } else {
-        document.getElementById('timeImprovement').textContent = timeImprovement + '% time saved';
-        // Keep the clock icon for time saved
-        document.getElementById('timeImprovement').innerHTML = '<i class="fas fa-clock"></i> ' + timeImprovement + '% time saved';
+        document.getElementById('timeTimeImprovement').textContent = timeTimeImprovement + '% time saved';
+        document.getElementById('timeTimeImprovement').innerHTML = '<i class="fas fa-clock"></i> ' + timeTimeImprovement + '% time saved';
     }
     
-    document.getElementById('co2Saved').textContent = route.improvements.co2_saved;
+    document.getElementById('timeCO2Saved').textContent = route.improvements.time_co2_saved;
     
-    // Add quantum efficiency display if available
-    if (route.improvements.efficiency_gain) {
-        const efficiencyElement = document.getElementById('quantumEfficiency');
-        if (efficiencyElement) {
-            efficiencyElement.textContent = route.improvements.efficiency_gain.toFixed(1) + '%';
-        }
+    // Distance optimization improvements
+    document.getElementById('distanceDistanceImprovement').textContent = route.improvements.distance_distance_improvement;
+    
+    // Handle time improvement for distance optimization
+    const distanceTimeImprovement = route.improvements.distance_time_improvement;
+    if (distanceTimeImprovement < 0) {
+        document.getElementById('distanceTimeImprovement').textContent = Math.abs(distanceTimeImprovement) + '% time increase';
+        document.getElementById('distanceTimeImprovement').innerHTML = '<i class="fas fa-arrow-down"></i> ' + Math.abs(distanceTimeImprovement) + '% time increase';
+    } else {
+        document.getElementById('distanceTimeImprovement').textContent = distanceTimeImprovement + '% time saved';
+        document.getElementById('distanceTimeImprovement').innerHTML = '<i class="fas fa-clock"></i> ' + distanceTimeImprovement + '% time saved';
     }
+    
+    document.getElementById('distanceCO2Saved').textContent = route.improvements.distance_co2_saved;
     
     document.getElementById('routeResults').style.display = 'block';
 }
@@ -329,30 +333,46 @@ function showRouteOnMap(startZone, endZone, coordinates) {
         }
     }
     
-    // Add quantum route (optimized path) - GREEN SOLID
-    console.log('Quantum route coordinates:', coordinates.quantum_route);
-    console.log('Quantum route length:', coordinates.quantum_route ? coordinates.quantum_route.length : 0);
-    if (coordinates.quantum_route && coordinates.quantum_route.length > 0) {
-        const quantumRoute = L.polyline(coordinates.quantum_route, {
+    // Add quantum time route (time optimization) - GREEN SOLID
+    console.log('Quantum time route coordinates:', coordinates.quantum_time_route);
+    console.log('Quantum time route length:', coordinates.quantum_time_route ? coordinates.quantum_time_route.length : 0);
+    if (coordinates.quantum_time_route && coordinates.quantum_time_route.length > 0) {
+        const quantumTimeRoute = L.polyline(coordinates.quantum_time_route, {
             color: '#27ae60',
             weight: 8,
             opacity: 0.9
         }).addTo(map);
-        quantumRoute.bindPopup('Quantum Optimized Route (Advanced Algorithm)');
-        console.log('Quantum route added to map');
+        quantumTimeRoute.bindPopup('Quantum Time Optimization (Time-Focused Algorithm)');
+        console.log('Quantum time route added to map');
+    } else {
+        console.error('No quantum time route coordinates available');
+    }
+    
+    // Add quantum distance route (distance optimization) - BLUE SOLID
+    console.log('Quantum distance route coordinates:', coordinates.quantum_distance_route);
+    console.log('Quantum distance route length:', coordinates.quantum_distance_route ? coordinates.quantum_distance_route.length : 0);
+    if (coordinates.quantum_distance_route && coordinates.quantum_distance_route.length > 0) {
+        const quantumDistanceRoute = L.polyline(coordinates.quantum_distance_route, {
+            color: '#3498db',
+            weight: 8,
+            opacity: 0.9
+        }).addTo(map);
+        quantumDistanceRoute.bindPopup('Quantum Distance Optimization (Distance-Focused Algorithm)');
+        console.log('Quantum distance route added to map');
         
-        // Check if routes are identical
+        // Check if routes are different
         if (coordinates.classical_route && coordinates.classical_route.length > 0) {
             const classicalStr = JSON.stringify(coordinates.classical_route);
-            const quantumStr = JSON.stringify(coordinates.quantum_route);
-            if (classicalStr === quantumStr) {
-                console.error('WARNING: Classical and quantum routes are identical!');
+            const timeStr = JSON.stringify(coordinates.quantum_time_route);
+            const distanceStr = JSON.stringify(coordinates.quantum_distance_route);
+            if (classicalStr === timeStr && classicalStr === distanceStr) {
+                console.error('WARNING: All routes are identical!');
             } else {
                 console.log('Routes are different - good!');
             }
         }
     } else {
-        console.error('No quantum route coordinates available');
+        console.error('No quantum distance route coordinates available');
     }
     
     // Fit map to show both markers

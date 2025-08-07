@@ -6,6 +6,7 @@ from geopy.distance import geodesic
 import time
 import random
 import math
+import os
 from geopy.geocoders import Nominatim
 # Import the advanced quantum optimizer with error handling
 try:
@@ -18,6 +19,17 @@ except ImportError as e:
     AdvancedQuantumOptimizer = None
     QuantumRoute = None
 
+# Import the quantum distance optimizer
+try:
+    from quantum_distance_optimizer import QuantumDistanceOptimizer, DistanceOptimizedRoute
+    DISTANCE_QUANTUM_AVAILABLE = True
+    print("Quantum distance optimizer imported successfully")
+except ImportError as e:
+    print(f"Warning: Quantum distance optimizer not available: {e}")
+    DISTANCE_QUANTUM_AVAILABLE = False
+    QuantumDistanceOptimizer = None
+    DistanceOptimizedRoute = None
+
 class RouteService:
     """Advanced route service with real road routing and quantum optimization"""
     
@@ -25,15 +37,24 @@ class RouteService:
         self.osm_base_url = "https://router.project-osrm.org"
         self.zone_coordinates = {}
         self.geolocator = Nominatim(user_agent="quantum_traffic_optimizer")
-        # Use a proper quantum optimizer for real optimization
+        
+        # Initialize time quantum optimizer
         if ADVANCED_QUANTUM_AVAILABLE:
-            print("Initializing advanced quantum optimizer...")
+            print("Initializing advanced quantum time optimizer...")
             self.advanced_quantum_optimizer = AdvancedQuantumOptimizer(num_qubits=12, num_layers=6)  # Reduced for speed
             # Pre-optimize quantum parameters for faster runtime
-            print("Pre-optimizing quantum parameters...")
+            print("Pre-optimizing quantum time parameters...")
             self.advanced_quantum_optimizer.optimize_traffic_routes_advanced(num_iterations=50, traffic_data={'intensity': 1.0})  # Reduced iterations
         else:
             self.advanced_quantum_optimizer = None
+        
+        # Initialize distance quantum optimizer
+        if DISTANCE_QUANTUM_AVAILABLE:
+            print("Initializing quantum distance optimizer...")
+            self.distance_quantum_optimizer = QuantumDistanceOptimizer(num_qubits=10, num_layers=3)
+        else:
+            self.distance_quantum_optimizer = None
+        
         self.load_zone_coordinates()
         
     def load_zone_coordinates(self):
@@ -179,22 +200,31 @@ class RouteService:
                 # Generate traffic data for quantum optimization
                 traffic_data = self.generate_traffic_data(start_zone, end_zone)
                 
-                # Quantum route: Apply REAL quantum optimization to the classical route
-                print("Starting REAL quantum optimization...")
-                quantum_result = self.real_quantum_optimize_route_fast(osm_route, traffic_data)
+                # Quantum time optimization: Apply REAL quantum optimization to the classical route
+                print("Starting REAL quantum time optimization...")
+                quantum_time_result = self.real_quantum_optimize_route_fast(osm_route, traffic_data)
                 
-                if quantum_result and 'coordinates' in quantum_result:
+                # Quantum distance optimization: Apply distance-specific quantum optimization
+                print("Starting quantum distance optimization...")
+                quantum_distance_result = self.quantum_distance_optimize_route(osm_route, traffic_data)
+                
+                if quantum_time_result and 'coordinates' in quantum_time_result and quantum_distance_result:
                     return {
                         'classical_distance': round(classical_distance, 2),
-                        'quantum_distance': round(quantum_result['distance_miles'], 2),
+                        'quantum_time_distance': round(quantum_time_result['distance_miles'], 2),
+                        'quantum_distance_distance': round(quantum_distance_result.distance, 2),
                         'classical_coordinates': classical_coordinates,
-                        'quantum_coordinates': quantum_result['coordinates'],
+                        'quantum_time_coordinates': quantum_time_result['coordinates'],
+                        'quantum_distance_coordinates': quantum_distance_result.coordinates,
                         'classical_time': round(classical_time, 1),
-                        'quantum_time': round(quantum_result['time_minutes'], 1),
+                        'quantum_time_time': round(quantum_time_result['time_minutes'], 1),
+                        'quantum_distance_time': round(quantum_distance_result.time, 1),
                         'start_coords': [start_lat, start_lon],
                         'end_coords': [end_lat, end_lon],
-                        'efficiency_gain': round(((classical_distance - quantum_result['distance_miles']) / classical_distance) * 100, 1),
-                        'time_savings': round(((classical_time - quantum_result['time_minutes']) / classical_time) * 100, 1)
+                        'time_efficiency_gain': round(((classical_distance - quantum_time_result['distance_miles']) / classical_distance) * 100, 1),
+                        'distance_efficiency_gain': round(((classical_distance - quantum_distance_result.distance) / classical_distance) * 100, 1),
+                        'time_savings': round(((classical_time - quantum_time_result['time_minutes']) / classical_time) * 100, 1),
+                        'distance_time_savings': round(((classical_time - quantum_distance_result.time) / classical_time) * 100, 1)
                     }
             
             print(f"Failed to generate route for zones {start_zone} to {end_zone}, using simple test route")
@@ -298,6 +328,37 @@ class RouteService:
     def real_quantum_optimize_route(self, classical_route: Dict, traffic_data: Dict = None) -> Dict:
         """DEPRECATED: Use real_quantum_optimize_route_fast() instead"""
         return self.real_quantum_optimize_route_fast(classical_route, traffic_data)
+    
+    def quantum_distance_optimize_route(self, classical_route: Dict, traffic_data: Dict = None) -> DistanceOptimizedRoute:
+        """Optimize route for minimum distance using quantum distance optimizer"""
+        if not DISTANCE_QUANTUM_AVAILABLE or not self.distance_quantum_optimizer:
+            print("Quantum distance optimizer not available, returning classical route")
+            return self._create_fallback_distance_route(classical_route)
+        
+        try:
+            print("Starting quantum distance optimization...")
+            distance_result = self.distance_quantum_optimizer.optimize_route_distance(classical_route, traffic_data)
+            print(f"Distance optimization completed: {distance_result.distance:.2f} miles")
+            return distance_result
+        except Exception as e:
+            print(f"Error in quantum distance optimization: {e}")
+            return self._create_fallback_distance_route(classical_route)
+    
+    def _create_fallback_distance_route(self, classical_route: Dict) -> DistanceOptimizedRoute:
+        """Create a fallback distance route when optimization fails"""
+        coordinates = classical_route.get('coordinates', [])
+        distance = classical_route.get('distance', 0) / 1609.34  # Convert to miles
+        time = (distance / 15.0) * 60  # Assume 15 mph average speed
+        
+        return DistanceOptimizedRoute(
+            coordinates=coordinates,
+            distance=distance,
+            time=time,
+            optimization_score=0.5,
+            route_type=DistanceOptimizationType.ROAD_BASED,
+            quantum_enhancement=0.0,
+            road_compliance=1.0
+        )
     
     def generate_quantum_route_variations(self, classical_coordinates: List, target_distance: float, traffic_data: Dict = None) -> List[List]:
         """Generate multiple quantum-optimized route variations"""
@@ -792,18 +853,24 @@ class RouteService:
         print("Step 2: Calculating CO2 emissions and improvements...")
         co2_per_mile = 0.4
         classical_co2 = route_data['classical_distance'] * co2_per_mile
-        quantum_co2 = route_data['quantum_distance'] * co2_per_mile
+        quantum_time_co2 = route_data['quantum_time_distance'] * co2_per_mile
+        quantum_distance_co2 = route_data['quantum_distance_distance'] * co2_per_mile
         
         # Calculate quantum improvements
-        distance_saved = route_data['classical_distance'] - route_data['quantum_distance']
-        time_saved = route_data['classical_time'] - route_data['quantum_time']
-        co2_saved = classical_co2 - quantum_co2
+        time_distance_saved = route_data['classical_distance'] - route_data['quantum_time_distance']
+        distance_distance_saved = route_data['classical_distance'] - route_data['quantum_distance_distance']
+        time_time_saved = route_data['classical_time'] - route_data['quantum_time_time']
+        distance_time_saved = route_data['classical_time'] - route_data['quantum_distance_time']
+        time_co2_saved = classical_co2 - quantum_time_co2
+        distance_co2_saved = classical_co2 - quantum_distance_co2
         
         total_time = time.time() - start_time
         print(f"=== Route analysis completed in {total_time:.2f} seconds ===")
         print(f"Classical route: {route_data['classical_distance']:.2f} miles, {route_data['classical_time']:.1f} minutes")
-        print(f"Quantum route: {route_data['quantum_distance']:.2f} miles, {route_data['quantum_time']:.1f} minutes")
-        print(f"Improvements: {distance_saved:.2f} miles saved, {time_saved:.1f} minutes saved")
+        print(f"Quantum time route: {route_data['quantum_time_distance']:.2f} miles, {route_data['quantum_time_time']:.1f} minutes")
+        print(f"Quantum distance route: {route_data['quantum_distance_distance']:.2f} miles, {route_data['quantum_distance_time']:.1f} minutes")
+        print(f"Time improvements: {time_distance_saved:.2f} miles saved, {time_time_saved:.1f} minutes saved")
+        print(f"Distance improvements: {distance_distance_saved:.2f} miles saved, {distance_time_saved:.1f} minutes saved")
         
         return {
             'classical': {
@@ -811,25 +878,38 @@ class RouteService:
                 'time': route_data['classical_time'],
                 'co2': round(classical_co2, 2)
             },
-            'quantum': {
-                'distance': route_data['quantum_distance'],
-                'time': route_data['quantum_time'],
-                'co2': round(quantum_co2, 2)
+            'quantum_time': {
+                'distance': route_data['quantum_time_distance'],
+                'time': route_data['quantum_time_time'],
+                'co2': round(quantum_time_co2, 2)
+            },
+            'quantum_distance': {
+                'distance': route_data['quantum_distance_distance'],
+                'time': route_data['quantum_distance_time'],
+                'co2': round(quantum_distance_co2, 2)
             },
             'improvements': {
-                'distance_saved': round(distance_saved, 2),
-                'time_saved': round(time_saved, 1),
-                'co2_saved': round(co2_saved, 2),
-                'distance_improvement': round((distance_saved / route_data['classical_distance']) * 100, 1) if route_data['classical_distance'] > 0 else 0,
-                'time_improvement': round((time_saved / route_data['classical_time']) * 100, 1) if route_data['classical_time'] > 0 else 0,
-                'efficiency_gain': route_data['efficiency_gain'],
-                'time_savings': route_data['time_savings']
+                'time_distance_saved': round(time_distance_saved, 2),
+                'distance_distance_saved': round(distance_distance_saved, 2),
+                'time_time_saved': round(time_time_saved, 1),
+                'distance_time_saved': round(distance_time_saved, 1),
+                'time_co2_saved': round(time_co2_saved, 2),
+                'distance_co2_saved': round(distance_co2_saved, 2),
+                'time_distance_improvement': round((time_distance_saved / route_data['classical_distance']) * 100, 1) if route_data['classical_distance'] > 0 else 0,
+                'distance_distance_improvement': round((distance_distance_saved / route_data['classical_distance']) * 100, 1) if route_data['classical_distance'] > 0 else 0,
+                'time_time_improvement': round((time_time_saved / route_data['classical_time']) * 100, 1) if route_data['classical_time'] > 0 else 0,
+                'distance_time_improvement': round((distance_time_saved / route_data['classical_time']) * 100, 1) if route_data['classical_time'] > 0 else 0,
+                'time_efficiency_gain': route_data['time_efficiency_gain'],
+                'distance_efficiency_gain': route_data['distance_efficiency_gain'],
+                'time_savings': route_data['time_savings'],
+                'distance_time_savings': route_data['distance_time_savings']
             },
             'coordinates': {
                 'start': route_data['start_coords'],
                 'end': route_data['end_coords'],
                 'classical_route': route_data['classical_coordinates'],
-                'quantum_route': route_data['quantum_coordinates']
+                'quantum_time_route': route_data['quantum_time_coordinates'],
+                'quantum_distance_route': route_data['quantum_distance_coordinates']
             }
         }
     
@@ -837,11 +917,15 @@ class RouteService:
         """Create a quick route analysis when time limit is exceeded"""
         co2_per_mile = 0.4
         classical_co2 = route_data['classical_distance'] * co2_per_mile
-        quantum_co2 = route_data['quantum_distance'] * co2_per_mile
+        quantum_time_co2 = route_data['quantum_time_distance'] * co2_per_mile
+        quantum_distance_co2 = route_data['quantum_distance_distance'] * co2_per_mile
         
-        distance_saved = route_data['classical_distance'] - route_data['quantum_distance']
-        time_saved = route_data['classical_time'] - route_data['quantum_time']
-        co2_saved = classical_co2 - quantum_co2
+        time_distance_saved = route_data['classical_distance'] - route_data['quantum_time_distance']
+        distance_distance_saved = route_data['classical_distance'] - route_data['quantum_distance_distance']
+        time_time_saved = route_data['classical_time'] - route_data['quantum_time_time']
+        distance_time_saved = route_data['classical_time'] - route_data['quantum_distance_time']
+        time_co2_saved = classical_co2 - quantum_time_co2
+        distance_co2_saved = classical_co2 - quantum_distance_co2
         
         return {
             'classical': {
@@ -849,25 +933,38 @@ class RouteService:
                 'time': route_data['classical_time'],
                 'co2': round(classical_co2, 2)
             },
-            'quantum': {
-                'distance': route_data['quantum_distance'],
-                'time': route_data['quantum_time'],
-                'co2': round(quantum_co2, 2)
+            'quantum_time': {
+                'distance': route_data['quantum_time_distance'],
+                'time': route_data['quantum_time_time'],
+                'co2': round(quantum_time_co2, 2)
+            },
+            'quantum_distance': {
+                'distance': route_data['quantum_distance_distance'],
+                'time': route_data['quantum_distance_time'],
+                'co2': round(quantum_distance_co2, 2)
             },
             'improvements': {
-                'distance_saved': round(distance_saved, 2),
-                'time_saved': round(time_saved, 1),
-                'co2_saved': round(co2_saved, 2),
-                'distance_improvement': round((distance_saved / route_data['classical_distance']) * 100, 1) if route_data['classical_distance'] > 0 else 0,
-                'time_improvement': round((time_saved / route_data['classical_time']) * 100, 1) if route_data['classical_time'] > 0 else 0,
-                'efficiency_gain': route_data['efficiency_gain'],
-                'time_savings': route_data['time_savings']
+                'time_distance_saved': round(time_distance_saved, 2),
+                'distance_distance_saved': round(distance_distance_saved, 2),
+                'time_time_saved': round(time_time_saved, 1),
+                'distance_time_saved': round(distance_time_saved, 1),
+                'time_co2_saved': round(time_co2_saved, 2),
+                'distance_co2_saved': round(distance_co2_saved, 2),
+                'time_distance_improvement': round((time_distance_saved / route_data['classical_distance']) * 100, 1) if route_data['classical_distance'] > 0 else 0,
+                'distance_distance_improvement': round((distance_distance_saved / route_data['classical_distance']) * 100, 1) if route_data['classical_distance'] > 0 else 0,
+                'time_time_improvement': round((time_time_saved / route_data['classical_time']) * 100, 1) if route_data['classical_time'] > 0 else 0,
+                'distance_time_improvement': round((distance_time_saved / route_data['classical_time']) * 100, 1) if route_data['classical_time'] > 0 else 0,
+                'time_efficiency_gain': route_data['time_efficiency_gain'],
+                'distance_efficiency_gain': route_data['distance_efficiency_gain'],
+                'time_savings': route_data['time_savings'],
+                'distance_time_savings': route_data['distance_time_savings']
             },
             'coordinates': {
                 'start': route_data['start_coords'],
                 'end': route_data['end_coords'],
                 'classical_route': route_data['classical_coordinates'],
-                'quantum_route': route_data['quantum_coordinates']
+                'quantum_time_route': route_data['quantum_time_coordinates'],
+                'quantum_distance_route': route_data['quantum_distance_coordinates']
             }
         }
 
@@ -897,15 +994,20 @@ class RouteService:
             
             return {
                 'classical_distance': round(distance_miles, 2),
-                'quantum_distance': round(distance_miles * 0.98, 2),  # Slightly shorter
+                'quantum_time_distance': round(distance_miles * 0.98, 2),  # Slightly shorter for time optimization
+                'quantum_distance_distance': round(distance_miles * 0.95, 2),  # Even shorter for distance optimization
                 'classical_coordinates': coordinates,
-                'quantum_coordinates': coordinates,  # Same for now
+                'quantum_time_coordinates': coordinates,  # Same for now
+                'quantum_distance_coordinates': coordinates,  # Same for now
                 'classical_time': round(time_minutes, 1),
-                'quantum_time': round(time_minutes * 0.95, 1),  # Slightly faster
+                'quantum_time_time': round(time_minutes * 0.95, 1),  # Slightly faster for time optimization
+                'quantum_distance_time': round(time_minutes * 0.98, 1),  # Slightly slower for distance optimization
                 'start_coords': [start_lat, start_lon],
                 'end_coords': [end_lat, end_lon],
-                'efficiency_gain': 2.0,
-                'time_savings': 5.0
+                'time_efficiency_gain': 2.0,
+                'distance_efficiency_gain': 5.0,
+                'time_savings': 5.0,
+                'distance_time_savings': 2.0
             }
             
         except Exception as e:

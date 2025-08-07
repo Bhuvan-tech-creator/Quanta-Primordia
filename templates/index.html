@@ -131,8 +131,8 @@
 
         .route-comparison {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
             margin-top: 20px;
         }
 
@@ -223,16 +223,22 @@
                             <div id="map" class="map-container"></div>
                             <div class="mt-3">
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="d-flex align-items-center justify-content-center">
                                             <div style="width: 20px; height: 6px; background-color: #ff0000; margin-right: 10px; border-radius: 3px; border: 1px dashed #ccc;"></div>
                                             <small><strong>Classical Route</strong> (Real Road Network)</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="d-flex align-items-center justify-content-center">
                                             <div style="width: 20px; height: 6px; background-color: #27ae60; margin-right: 10px; border-radius: 3px;"></div>
-                                            <small><strong>Quantum Route</strong> (Optimized Algorithm)</small>
+                                            <small><strong>Quantum Time</strong> (Time Optimization)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <div style="width: 20px; height: 6px; background-color: #3498db; margin-right: 10px; border-radius: 3px;"></div>
+                                            <small><strong>Quantum Distance</strong> (Distance Optimization)</small>
                                         </div>
                                     </div>
                                 </div>
@@ -258,24 +264,45 @@
                                     </div>
                                 </div>
                                 <div class="route-card">
-                                    <h5><i class="fas fa-atom"></i> Quantum Route</h5>
+                                    <h5><i class="fas fa-clock"></i> Quantum Time</h5>
                                     <div class="metric">
-                                        <strong>Distance:</strong> <span id="quantumDistance">-</span> miles
-                                    </div>
-                                    <div class="metric">
-                                        <strong>Time:</strong> <span id="quantumTime">-</span> minutes
+                                        <strong>Distance:</strong> <span id="quantumTimeDistance">-</span> miles
                                     </div>
                                     <div class="metric">
-                                        <strong>CO2:</strong> <span id="quantumCO2">-</span> kg
+                                        <strong>Time:</strong> <span id="quantumTimeTime">-</span> minutes
+                                    </div>
+                                    <div class="metric">
+                                        <strong>CO2:</strong> <span id="quantumTimeCO2">-</span> kg
                                     </div>
                                     <div class="improvement-badge">
-                                        <i class="fas fa-arrow-up"></i> <span id="distanceImprovement">-</span>% distance saved
+                                        <i class="fas fa-arrow-up"></i> <span id="timeDistanceImprovement">-</span>% distance saved
                                     </div>
                                     <div class="improvement-badge">
-                                        <i class="fas fa-clock"></i> <span id="timeImprovement">-</span>% time saved
+                                        <i class="fas fa-clock"></i> <span id="timeTimeImprovement">-</span>% time saved
                                     </div>
                                     <div class="improvement-badge">
-                                        <i class="fas fa-leaf"></i> <span id="co2Saved">-</span> kg CO2 saved
+                                        <i class="fas fa-leaf"></i> <span id="timeCO2Saved">-</span> kg CO2 saved
+                                    </div>
+                                </div>
+                                <div class="route-card">
+                                    <h5><i class="fas fa-route"></i> Quantum Distance</h5>
+                                    <div class="metric">
+                                        <strong>Distance:</strong> <span id="quantumDistanceDistance">-</span> miles
+                                    </div>
+                                    <div class="metric">
+                                        <strong>Time:</strong> <span id="quantumDistanceTime">-</span> minutes
+                                    </div>
+                                    <div class="metric">
+                                        <strong>CO2:</strong> <span id="quantumDistanceCO2">-</span> kg
+                                    </div>
+                                    <div class="improvement-badge">
+                                        <i class="fas fa-arrow-up"></i> <span id="distanceDistanceImprovement">-</span>% distance saved
+                                    </div>
+                                    <div class="improvement-badge">
+                                        <i class="fas fa-clock"></i> <span id="distanceTimeImprovement">-</span>% time saved
+                                    </div>
+                                    <div class="improvement-badge">
+                                        <i class="fas fa-leaf"></i> <span id="distanceCO2Saved">-</span> kg CO2 saved
                                     </div>
                                 </div>
                             </div>

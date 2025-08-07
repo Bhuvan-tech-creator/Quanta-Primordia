@@ -123,7 +123,8 @@ def optimize_route():
             'start_borough': start_zone_info['Borough'],
             'end_borough': end_zone_info['Borough'],
             'classical': route_analysis['classical'],
-            'quantum': route_analysis['quantum'],
+            'quantum_time': route_analysis['quantum_time'],
+            'quantum_distance': route_analysis['quantum_distance'],
             'improvements': route_analysis['improvements']
         }
         
