@@ -25,33 +25,36 @@ class QuantumAnalysis:
         
         # Preprocess data
         self._preprocess_data()
-        self._create_traffic_matrix()
+        self._create_traffic_matrix_fast()
         
     def _preprocess_data(self):
-        """Preprocess the trip data for analysis"""
-        # Convert datetime columns
+        """Preprocess the trip data for analysis - OPTIMIZED VERSION"""
+        print("Preprocessing trip data...")
+        
+        # Convert datetime columns efficiently
         self.trip_data['tpep_pickup_datetime'] = pd.to_datetime(self.trip_data['tpep_pickup_datetime'])
         self.trip_data['tpep_dropoff_datetime'] = pd.to_datetime(self.trip_data['tpep_dropoff_datetime'])
         
-        # Add time-based features
+        # Add time-based features efficiently
         self.trip_data['pickup_hour'] = self.trip_data['tpep_pickup_datetime'].dt.hour
         self.trip_data['pickup_day'] = self.trip_data['tpep_pickup_datetime'].dt.dayofweek
         self.trip_data['trip_duration'] = (
             self.trip_data['tpep_dropoff_datetime'] - self.trip_data['tpep_pickup_datetime']
         ).dt.total_seconds() / 60  # minutes
         
-        # Filter out invalid trips
-        self.trip_data = self.trip_data[
+        # Filter out invalid trips efficiently
+        valid_mask = (
             (self.trip_data['trip_distance'] > 0) &
             (self.trip_data['trip_duration'] > 0) &
             (self.trip_data['trip_duration'] < 180)  # Less than 3 hours
-        ]
+        )
+        self.trip_data = self.trip_data[valid_mask]
         
         print(f"After preprocessing: {len(self.trip_data)} valid trips")
         
-    def _create_traffic_matrix(self):
-        """Create a traffic congestion matrix based on trip data"""
-        print("Creating traffic matrix...")
+    def _create_traffic_matrix_fast(self):
+        """Create a traffic congestion matrix using FAST vectorized operations"""
+        print("Creating traffic matrix using FAST vectorized operations...")
         
         # Get unique zones
         zones = sorted(self.zone_data['LocationID'].unique())
@@ -61,36 +64,62 @@ class QuantumAnalysis:
         # Initialize traffic matrix
         self.traffic_matrix = np.zeros((len(zones), len(zones)))
         
-        # Calculate traffic between zones with time-based weighting
-        for _, trip in self.trip_data.iterrows():
-            pickup_zone = trip['PULocationID']
-            dropoff_zone = trip['DOLocationID']
-            
-            if pickup_zone in zone_to_idx and dropoff_zone in zone_to_idx:
-                pickup_idx = zone_to_idx[pickup_zone]
-                dropoff_idx = zone_to_idx[dropoff_zone]
-                
-                # Enhanced weighting based on distance, duration, and time of day
-                base_weight = trip['trip_distance'] * (trip['trip_duration'] / 60)
-                
-                # Time-based traffic weighting
-                hour = trip['pickup_hour']
-                if hour in [7, 8, 9, 17, 18, 19]:  # Peak hours
-                    time_weight = 2.0
-                elif 10 <= hour <= 16:  # Business hours
-                    time_weight = 1.5
-                else:  # Off-peak hours
-                    time_weight = 0.8
-                
-                final_weight = base_weight * time_weight
-                self.traffic_matrix[pickup_idx][dropoff_idx] += final_weight
+        # OPTIMIZATION 1: Sample data if too large (keep only 10% for speed)
+        if len(self.trip_data) > 100000:
+            print(f"Large dataset detected ({len(self.trip_data)} trips). Sampling 10% for speed...")
+            sample_size = min(100000, len(self.trip_data) // 10)
+            trip_sample = self.trip_data.sample(n=sample_size, random_state=42)
+        else:
+            trip_sample = self.trip_data
+        
+        print(f"Using {len(trip_sample)} trips for traffic matrix creation")
+        
+        # OPTIMIZATION 2: Use vectorized operations instead of iteration
+        # Filter trips with valid zones
+        valid_trips = trip_sample[
+            (trip_sample['PULocationID'].isin(zone_to_idx.keys())) &
+            (trip_sample['DOLocationID'].isin(zone_to_idx.keys()))
+        ].copy()
+        
+        # Convert zone IDs to indices efficiently
+        valid_trips['pickup_idx'] = valid_trips['PULocationID'].map(zone_to_idx)
+        valid_trips['dropoff_idx'] = valid_trips['DOLocationID'].map(zone_to_idx)
+        
+        # OPTIMIZATION 3: Calculate weights vectorized
+        # Base weight calculation
+        valid_trips['base_weight'] = valid_trips['trip_distance'] * (valid_trips['trip_duration'] / 60)
+        
+        # Time-based traffic weighting (vectorized)
+        hour_conditions = [
+            valid_trips['pickup_hour'].isin([7, 8, 9, 17, 18, 19]),  # Peak hours
+            valid_trips['pickup_hour'].between(10, 16),  # Business hours
+        ]
+        time_weights = [2.0, 1.5, 0.8]  # Peak, business, off-peak
+        valid_trips['time_weight'] = np.select(hour_conditions, time_weights[:2], default=time_weights[2])
+        
+        # Final weight calculation
+        valid_trips['final_weight'] = valid_trips['base_weight'] * valid_trips['time_weight']
+        
+        # OPTIMIZATION 4: Use groupby for fast aggregation
+        traffic_aggregation = valid_trips.groupby(['pickup_idx', 'dropoff_idx'])['final_weight'].sum().reset_index()
+        
+        # Fill traffic matrix efficiently
+        for _, row in traffic_aggregation.iterrows():
+            pickup_idx = int(row['pickup_idx'])
+            dropoff_idx = int(row['dropoff_idx'])
+            weight = row['final_weight']
+            self.traffic_matrix[pickup_idx][dropoff_idx] = weight
         
         # Normalize the traffic matrix
         max_traffic = np.max(self.traffic_matrix)
         if max_traffic > 0:
             self.traffic_matrix = self.traffic_matrix / max_traffic
             
-        print(f"Created traffic matrix with shape: {self.traffic_matrix.shape}")
+        print(f"Created traffic matrix with shape: {self.traffic_matrix.shape} in FAST mode")
+        
+    def _create_traffic_matrix(self):
+        """DEPRECATED: Use _create_traffic_matrix_fast() instead"""
+        self._create_traffic_matrix_fast()
         
     def initialize_quantum_optimizer(self, num_qubits: int = 12, num_layers: int = 4):
         """Initialize the quantum optimizer"""

@@ -172,9 +172,15 @@ async function optimizeRoute() {
     optimizeBtn.disabled = true;
     routeLoading.style.display = 'block';
     
-    const { progressBar, interval } = showLoadingBar();
+    const { progressBar, interval, updateProgress } = showLoadingBar();
     
     try {
+        console.log('Starting route optimization...');
+        const startTime = Date.now();
+        
+        // Update progress to show we're starting
+        updateProgress('Initializing route analysis...', 10);
+        
         const response = await fetch('/api/optimize_route', {
             method: 'POST',
             headers: {
@@ -186,26 +192,34 @@ async function optimizeRoute() {
             })
         });
         
+        const responseTime = Date.now() - startTime;
+        console.log(`Server response received in ${responseTime}ms`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (data.status === 'success') {
             // Complete progress bar
-            const progressBarInner = progressBar.querySelector('.progress-bar');
-            progressBarInner.style.width = '100%';
-            progressBarInner.textContent = 'Quantum Optimization Complete!';
+            updateProgress('Quantum Optimization Complete!', 100);
             
             setTimeout(() => {
                 // Display results
                 displayRouteResults(data.route);
                 showRouteOnMap(startZone, endZone, data.coordinates);
-                showAlert('Advanced quantum route optimization completed successfully!', 'success');
+                showAlert(`Advanced quantum route optimization completed successfully in ${(responseTime/1000).toFixed(1)}s!`, 'success');
                 hideLoadingBar(progressBar, interval);
             }, 500);
         } else {
+            console.error('Server returned error:', data.message);
             showAlert('Error: ' + data.message, 'danger');
             hideLoadingBar(progressBar, interval);
         }
     } catch (error) {
+        console.error('Error during optimization:', error);
         showAlert('Error connecting to server: ' + error.message, 'danger');
         hideLoadingBar(progressBar, interval);
     } finally {
@@ -227,7 +241,25 @@ function displayRouteResults(route) {
     
     // Improvements
     document.getElementById('distanceImprovement').textContent = route.improvements.distance_improvement;
-    document.getElementById('timeImprovement').textContent = route.improvements.time_improvement;
+    
+    // Handle time improvement - if quantum route is slower, show negative improvement
+    const timeImprovement = route.improvements.time_improvement;
+    console.log('Time improvement calculation:', {
+        classicalTime: route.classical.time,
+        quantumTime: route.quantum.time,
+        timeImprovement: timeImprovement
+    });
+    
+    if (timeImprovement < 0) {
+        document.getElementById('timeImprovement').textContent = Math.abs(timeImprovement) + '% time increase';
+        // Change the icon to indicate increase
+        document.getElementById('timeImprovement').innerHTML = '<i class="fas fa-arrow-down"></i> ' + Math.abs(timeImprovement) + '% time increase';
+    } else {
+        document.getElementById('timeImprovement').textContent = timeImprovement + '% time saved';
+        // Keep the clock icon for time saved
+        document.getElementById('timeImprovement').innerHTML = '<i class="fas fa-clock"></i> ' + timeImprovement + '% time saved';
+    }
+    
     document.getElementById('co2Saved').textContent = route.improvements.co2_saved;
     
     // Add quantum efficiency display if available
@@ -243,6 +275,8 @@ function displayRouteResults(route) {
 
 // Show route on map
 function showRouteOnMap(startZone, endZone, coordinates) {
+    console.log('Full coordinates object:', coordinates);
+    
     // Clear existing markers and routes
     map.eachLayer((layer) => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
@@ -268,18 +302,36 @@ function showRouteOnMap(startZone, endZone, coordinates) {
     const endMarker = L.marker(coordinates.end, {icon: gpsIcon}).addTo(map);
     endMarker.bindPopup(`<b>End:</b> ${endZoneInfo.Zone}<br><b>Borough:</b> ${endZoneInfo.Borough}`);
     
-    // Add classical route (real road route) - PURPLE DASHED
+    // Add classical route (real road route) - BRIGHT RED/ORANGE
+    console.log('Classical route coordinates:', coordinates.classical_route);
+    console.log('Classical route length:', coordinates.classical_route ? coordinates.classical_route.length : 0);
     if (coordinates.classical_route && coordinates.classical_route.length > 0) {
         const classicalRoute = L.polyline(coordinates.classical_route, {
-            color: '#9b59b6',
-            weight: 6,
-            opacity: 0.9,
-            dashArray: '15, 10'
+            color: '#ff0000', // Pure red color for maximum visibility
+            weight: 10, // Even thicker for better visibility
+            opacity: 1.0, // Full opacity
+            dashArray: '20, 15' // Larger dashes for better visibility
         }).addTo(map);
         classicalRoute.bindPopup('Classical Route (Real Road Network)');
+        console.log('Classical route added to map');
+    } else {
+        console.error('No classical route coordinates available');
+        // Create a fallback direct route if classical route is missing
+        if (coordinates.start && coordinates.end) {
+            const fallbackRoute = L.polyline([coordinates.start, coordinates.end], {
+                color: '#ff0000',
+                weight: 10,
+                opacity: 1.0,
+                dashArray: '20, 15'
+            }).addTo(map);
+            fallbackRoute.bindPopup('Classical Route (Direct Path - Fallback)');
+            console.log('Fallback classical route added to map');
+        }
     }
     
     // Add quantum route (optimized path) - GREEN SOLID
+    console.log('Quantum route coordinates:', coordinates.quantum_route);
+    console.log('Quantum route length:', coordinates.quantum_route ? coordinates.quantum_route.length : 0);
     if (coordinates.quantum_route && coordinates.quantum_route.length > 0) {
         const quantumRoute = L.polyline(coordinates.quantum_route, {
             color: '#27ae60',
@@ -287,6 +339,20 @@ function showRouteOnMap(startZone, endZone, coordinates) {
             opacity: 0.9
         }).addTo(map);
         quantumRoute.bindPopup('Quantum Optimized Route (Advanced Algorithm)');
+        console.log('Quantum route added to map');
+        
+        // Check if routes are identical
+        if (coordinates.classical_route && coordinates.classical_route.length > 0) {
+            const classicalStr = JSON.stringify(coordinates.classical_route);
+            const quantumStr = JSON.stringify(coordinates.quantum_route);
+            if (classicalStr === quantumStr) {
+                console.error('WARNING: Classical and quantum routes are identical!');
+            } else {
+                console.log('Routes are different - good!');
+            }
+        }
+    } else {
+        console.error('No quantum route coordinates available');
     }
     
     // Fit map to show both markers
@@ -304,36 +370,32 @@ function showLoadingBar() {
     const progressBarInner = document.createElement('div');
     progressBarInner.className = 'progress-bar progress-bar-striped progress-bar-animated';
     progressBarInner.style.width = '0%';
-    progressBarInner.textContent = 'Quantum Optimization in Progress...';
+    progressBarInner.textContent = 'Initializing route analysis...';
     
     progressBar.appendChild(progressBarInner);
     loadingDiv.appendChild(progressBar);
     
-    // Animate progress bar with quantum-themed messages
+    // Function to update progress manually
+    const updateProgress = (message, percentage) => {
+        progressBarInner.style.width = percentage + '%';
+        progressBarInner.textContent = message;
+    };
+    
+    // Auto-progress for fallback (in case manual updates don't work)
     let progress = 0;
-    const quantumMessages = [
-        'Initializing quantum circuits...',
-        'Applying quantum superposition...',
-        'Measuring quantum states...',
-        'Optimizing route variations...',
-        'Calculating quantum efficiency...',
-        'Finalizing optimization...'
-    ];
-    let messageIndex = 0;
-    
     const interval = setInterval(() => {
-        progress += Math.random() * 12;
-        if (progress > 90) progress = 90;
-        progressBarInner.style.width = progress + '%';
-        
-        // Update message every 15%
-        if (progress > messageIndex * 15 && messageIndex < quantumMessages.length - 1) {
-            messageIndex++;
-            progressBarInner.textContent = quantumMessages[messageIndex];
+        // Only auto-progress if we're not at 100%
+        if (progress < 90) {
+            progress += 1;
+            if (progress > 90) progress = 90;
+            progressBarInner.style.width = progress + '%';
+            if (progress === 90) {
+                progressBarInner.textContent = 'Almost complete...';
+            }
         }
-    }, 300);
+    }, 300); // Slower auto-progress
     
-    return { progressBar, interval };
+    return { progressBar, interval, updateProgress };
 }
 
 function hideLoadingBar(progressBar, interval) {
