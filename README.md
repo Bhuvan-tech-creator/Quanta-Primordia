@@ -27,6 +27,17 @@ This project explores the use of quantum computing to optimize traffic routes in
     -   Plotly for data visualization
     -   geopy for geolocation
     -   OSRM for road routing
+      
+ ## Quantum Computing Details
+
+This project uses quantum computing principles to optimize traffic routes. Here's a breakdown:
+
+-   **PennyLane:** A cross-platform Python library for quantum machine learning, automatic differentiation, and optimization of hybrid quantum-classical computations. PennyLane       is used to:
+    -   Simulate quantum circuits for route optimization.
+    -   Implement quantum algorithms to find optimal routes.
+    -   Integrate quantum computations with classical machine learning models.
+-   **Quantum Algorithms:** The project employs quantum algorithms to solve the route optimization problem, potentially achieving better performance than classical algorithms for     certain problem instances.
+-   **Quantum Circuit Design:** Custom quantum circuits are designed to model traffic flow and find optimal routes by minimizing distance, time, and CO2 emissions.
 
 ## External Items Needed
     - A .parquet file of traffic data from NYC TLC Trip Record Data
@@ -121,5 +132,4 @@ This project explores the use of quantum computing to optimize traffic routes in
     -   Optimizing routes by sending requests to the backend API.
     -   Displaying route results and visualizing routes on the map.
 
-# Thank You So Much!
-# Hope This Helps!
+# Thank You So Much, Hope This Helps!
