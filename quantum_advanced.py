@@ -582,3 +582,14 @@ class AdvancedQuantumOptimizer:
             'traffic_optimization_target': self.traffic_optimization_target,
             'co2_reduction_target': self.co2_reduction_target
         } 
+
+    def get_quantum_score(self) -> float:
+        """Get a quantum score for route optimization"""
+        # Use the current quantum state to generate a score
+        if hasattr(self, 'current_quantum_state'):
+            # Use the quantum state to generate a score between 0 and 1
+            score = np.mean(self.current_quantum_state) if self.current_quantum_state is not None else 0.5
+            return max(0.0, min(1.0, score))
+        else:
+            # Fallback to a random score based on current time
+            return 0.5 + 0.3 * np.sin(time.time() * 0.1) 
