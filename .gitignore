@@ -113,9 +113,7 @@ dmypy.json
 *.qasm
 *.qobj
 
-# Large data files
-yellow_tripdata_*.parquet
-taxi_zone_lookup.csv
+
 
 # Application specific
 *.db
