@@ -29,8 +29,6 @@ wheels/
 MANIFEST
 
 # Data Files
-*.parquet
-*.csv
 *.json
 *.xlsx
 *.xls
