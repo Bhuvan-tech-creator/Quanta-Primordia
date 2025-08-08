@@ -12,3 +12,5 @@ networkx
 matplotlib
 seaborn
 scipy
+pyarrow
+fastparquet
